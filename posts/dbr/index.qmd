@@ -1,0 +1,130 @@
+---
+title: "DBR list"
+author: "Paresh Kadoo"
+date: "2023-05-23"
+categories: [news, code, analysis]
+image: "image.jpg"
+execute:
+  echo: false
+---
+
+```{r}
+#| label: load-packages
+#| include: false 
+#| warning: false
+#| message: false
+
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(seasonal)
+library(readxl)
+library(tidyr)
+library(purrr)
+library(stringr)
+library(zoo)
+library(plotly)
+library(scales)
+library(DT)
+theme_set(theme_minimal())
+```
+
+1. Sales Achieved vs Business Plan for the year
+
+```{r}
+
+yearly_sale <- read_excel("D:/PO_tracker/2023/Apr/30 Apr/md/DBR.xlsx", sheet = "(Sales vs Target) Year ", range = "B1:D31")
+yearly_sale$Date <- as.Date(yearly_sale$Date)
+
+yearly_sale_plot <- yearly_sale %>% gather("Sale_type", "Sale", -Date) %>% 
+  ggplot(aes(x = Date, y = Sale, colour = as.factor(Sale_type))) + geom_line(size = 1)+
+  theme(legend.position="bottom", legend.box = "horizontal", legend.title = element_blank())
+
+ggplotly(yearly_sale_plot) %>% layout(legend = list(orientation = "h", x = 0.4, y = -0.2))
+
+
+```
+
+
+2. Category level Business Plan chase for the year
+
+```{r}
+yearly_table <- read_excel("D:/PO_tracker/2023/Apr/30 Apr/md/DBR.xlsx", sheet = "Subcat Level", range = "A3:F20")
+yearly_table <- yearly_table %>% filter(`Channel wise - Category Level` != "Spotzero", `Channel wise - Category Level` != "Treo")
+
+
+yearly_table_plot <- yearly_table %>% 
+  filter(`Short Name` != "Total") %>% 
+  ggplot(aes(x = factor(`Short Name`, 
+                        levels = c("ML", "TS", "TW", "SL", "UN", "HH", "Pet", "ST", "MM", "EL", "PC","CMBO", "SZ", "Treo")), 
+             group = 1)) + 
+  geom_bar(aes(y = `Target Value`), stat = "identity", fill  = "black", width = 1, colour = "grey", alpha = 0.3) + 
+  geom_bar(aes(y = `Invoiced  Value`), stat = "identity", fill  = "black", width = 0.7, colour = "grey", alpha = 0.6) + 
+  geom_line(aes(y = `Last year`)) + xlab("Category")
+
+ggplotly(yearly_table_plot)
+
+```
+
+```{r}
+
+datatable(yearly_table %>% mutate(`Invoiced  Value` = number(`Invoiced  Value`, accuracy = 0.01),
+                                        `Target Value` = number(`Target Value`, accuracy = 0.01),
+                                        `Last year` = number(`Last year`, accuracy = 0.01),
+                                        Growth = percent(Growth, accuracy = 0.01)), 
+          rownames = F, extensions = 'Buttons', filter="top", editable=T, 
+              options = list(dom = 'Blfrtip', 
+                             buttons = c('csv', 'excel'), 
+                             lengthMenu = list(c(10,50,100,-1),c(10,50,100,"All"))))
+
+```
+
+3. Target vs Sales Achieved
+
+```{r}
+
+monthly_sale <- read_excel("D:/PO_tracker/2023/Apr/30 Apr/md/DBR.xlsx", sheet = "Sales vs Target", range = "A2:C32")
+monthly_sale$Date <- as.Date(monthly_sale$Date)
+
+monthly_sale_plot <- monthly_sale %>% gather("Sale_type", "Sale", -Date) %>% 
+  ggplot(aes(x = Date, y = Sale, colour = as.factor(Sale_type))) + geom_line(size = 1)+
+  theme(legend.position="bottom", legend.box = "horizontal", legend.title = element_blank())
+
+
+monthly_sale_plot
+```
+
+
+4. Category level Business Plan for current Month
+
+```{r}
+
+monthly_table <- read_excel("D:/PO_tracker/2023/Apr/30 Apr/md/DBR.xlsx", sheet = "Subcat Level", range = "A26:E43")
+monthly_table <- monthly_table %>% filter(`Channel wise - Category Level` != "Spotzero", `Channel wise - Category Level` != "Treo")
+
+monthly_table_plot <- monthly_table %>% 
+  filter(`Short Name` != "Total") %>% 
+  ggplot(aes(x = factor(`Short Name`, 
+                        levels = c("ML", "TS", "TW", "SL", "UN", "HH", "Pet", "ST", "MM", "EL", "PC","CMBO", "SZ", "Treo")), 
+             group = 1)) + 
+  geom_bar(aes(y = `Target Value`), stat = "identity", fill  = "black", width = 1, colour = "grey", alpha = 0.3) + 
+  geom_bar(aes(y = `Invoiced  Value`), stat = "identity", fill  = "black", width = 0.7, colour = "grey", alpha = 0.6) + 
+  geom_line(aes(y = `Last year`)) + xlab("Category")
+
+
+ggplotly(monthly_table_plot)
+
+```
+
+```{r}
+
+datatable(monthly_table %>% mutate(`Invoiced  Value` = number(`Invoiced  Value`, accuracy = 0.01),
+                                        `Target Value` = number(`Target Value`, accuracy = 0.01),
+                                        `Last year` = number(`Last year`, accuracy = 0.01)),
+          rownames = F, extensions = 'Buttons', filter="top", editable=T, 
+              options = list(dom = 'Blfrtip', 
+                             buttons = c('csv', 'excel'), 
+                             lengthMenu = list(c(10,50,100,-1),c(10,50,100,"All"))))
+
+
+```
