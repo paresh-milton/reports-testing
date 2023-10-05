@@ -1,0 +1,162 @@
+---
+title: "Pending PO with inventory mapping"
+author: "Paresh Kadoo"
+date: last-modified
+categories: [Pending PO, OCT-2023]
+image: "image.jpg"
+execute:
+  echo: false
+  warning: false
+---
+
+```{r}
+#| label: load-packages
+#| include: false 
+#| warning: false
+#| message: false
+
+library(rebus)
+library(writexl)
+library(micromap)
+library(lookup)
+library(readr)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(seasonal)
+library(readxl)
+library(tidyr)
+library(purrr)
+library(stringr)
+library(zoo)
+library(plotly)
+library(scales)
+library(DT)
+theme_set(theme_minimal())
+```
+
+```{r}
+#| include: false 
+#| warning: false
+#| message: false
+
+ZSD060 <- read_excel("D:/Ecommerce/Inventory Planning/PO fill rate/SAP REPORTS SEP 12/ZSD060.XLSX", sheet = "Sheet1")
+ZMB52 <- read_excel("D:/Ecommerce/Inventory Planning/PO fill rate/SAP REPORTS SEP 12/zmb52.XLSX", sheet = "Sheet1")
+ZMB52 <- ZMB52[1:(nrow(ZMB52)-3), ]
+```
+
+```{r}
+
+ZSD060$MOQ <- right(ZSD060$`MATERIAL NUMBER`,4)
+ZSD060$MOQ[ZSD060$MOQ == "CTN1"] <- 1
+ZSD060$units <- as.numeric(ZSD060$MOQ) * ZSD060$`PENDING QUANTITY`
+
+
+ZSD060_sub <- ZSD060 %>% filter(is.na(`Order Close`)) %>% 
+  group_by(`REC DESCRIPTION`,`SUPPLYING PLANT`,`PO No`,`PURCH/SALES DATE`,`DIVISON DESCRIPTION`,
+           `MATERIAL NUMBER`,`SHORT DESCRIPTION`) %>% 
+  summarise(Pending_units = sum(units, na.rm = T), 
+            Pending_value = sum(`PENDING VALUE`, na.rm = T))
+
+ZSD060_sub <- ZSD060_sub %>% filter(Pending_units !=0)
+ZSD060_sub$NLC <- ZSD060_sub$Pending_value/ZSD060_sub$Pending_units
+ZSD060_sub$`PURCH/SALES DATE` <- as.Date(ZSD060_sub$`PURCH/SALES DATE`)
+ZSD060_sub$avai_units <- rep(0, nrow(ZSD060_sub))
+
+ZSD060_sub <- ZSD060_sub %>% arrange(`PURCH/SALES DATE`, `PO No`, `REC DESCRIPTION`, `SUPPLYING PLANT`, `MATERIAL NUMBER`)
+
+ZMB52$MOQ <- right(ZMB52$Material, 4)
+ZMB52$MOQ[ZMB52$MOQ == "CTN1"] <- 1
+ZMB52$units <- as.numeric(ZMB52$MOQ) * ZMB52$Unrestricted
+
+
+ZMB52_con <- ZMB52 %>% group_by(Plant, Material) %>% summarise(units = sum(units, na.rm = T))
+
+ZSD060_con <- ZSD060_sub %>% group_by(`SUPPLYING PLANT`, `MATERIAL NUMBER`) %>% 
+  summarise(Pending_units = sum(Pending_units, na.rm = T), 
+            Pending_value = sum(Pending_value, na.rm = T))
+
+ZSD060_con$inv_units <- lookup(paste0(ZSD060_con$`SUPPLYING PLANT`, ZSD060_con$`MATERIAL NUMBER`), 
+                               paste0(ZMB52_con$Plant, ZMB52_con$Material), 
+                               ZMB52_con$units)
+
+ZSD060_con$inv_units[is.na(ZSD060_con$inv_units)] <- 0
+
+ZSD060_con$rem_units <- ZSD060_con$inv_units
+
+for(i in seq_along(ZSD060_con$`MATERIAL NUMBER`)){
+    for(p in seq_along(ZSD060_sub$`MATERIAL NUMBER`)){
+      
+      if(ZSD060_sub$`MATERIAL NUMBER`[p] == ZSD060_con$`MATERIAL NUMBER`[i] & 
+         ZSD060_sub$`SUPPLYING PLANT`[p] == ZSD060_con$`SUPPLYING PLANT`[i] & 
+        ZSD060_con$rem_units[i] > 0){
+        
+          ZSD060_sub$avai_units[p] <- min(ZSD060_sub$Pending_units[p], ZSD060_con$rem_units[i])
+          ZSD060_con$rem_units[i] = ZSD060_con$rem_units[i] - ZSD060_sub$avai_units[p]
+          
+      } 
+    }
+}
+
+
+ZSD060_sub$req_units <- ZSD060_sub$Pending_units - ZSD060_sub$avai_units
+ZSD060_sub$remain_units <- ZSD060_sub$req_units
+ZSD060_sub$assign_units <- rep(0, nrow(ZSD060_sub))
+ZSD060_sub$assign_plant <- rep(0, nrow(ZSD060_sub))
+
+
+ZMB52_con$filt <- lookup(ZMB52_con$Material, ZSD060_sub$`MATERIAL NUMBER`,  ZSD060_sub$`PO No`)
+
+ZMB52_con_sub <- ZMB52_con %>% filter(!is.na(filt))
+ZMB52_con_sub$rem_units <- ZMB52_con_sub$units
+ZMB52_con_sub$Plant <- as.double(ZMB52_con_sub$Plant)
+
+other_plants <- ZSD060_sub[FALSE, ]
+#other_plants$assign_plant <- as.character(other_plants$assign_plant)
+
+
+for (i in seq_along(ZSD060_sub$`MATERIAL NUMBER`)){
+  p <- 0
+  for(j in seq_along(ZMB52_con_sub$Material)){
+    
+    if((ZSD060_sub$`MATERIAL NUMBER`[i] == ZMB52_con_sub$Material[j]) & 
+       (ZSD060_sub$`SUPPLYING PLANT`[i] != ZMB52_con_sub$Plant[j])){
+      if(ZSD060_sub$remain_units[i] > 0){
+        
+        ZSD060_sub$assign_units[i] <- min(ZSD060_sub$remain_units[i], ZMB52_con_sub$rem_units[j])
+        ZSD060_sub$assign_plant[i] <- ZMB52_con_sub$Plant[j]
+        ZSD060_sub$remain_units[i] <- ZSD060_sub$remain_units[i] - ZSD060_sub$assign_units[i]
+        other_plants <- rbind(other_plants, ZSD060_sub[i, ])
+        ZMB52_con_sub$rem_units[j] <- ZMB52_con_sub$rem_units[j] - ZSD060_sub$assign_units[i]
+        p <- p + 1
+      }
+    } 
+      
+  }
+  
+  if (p == 0){
+    other_plants <- rbind(other_plants, ZSD060_sub[i, ])
+  }
+}
+  
+
+other_plants_sub <- other_plants %>% select(-remain_units) %>% 
+  pivot_wider(names_from = assign_plant, values_from = assign_units, 
+              values_fill = 0, values_fn = ~sum(.x, na.rm = T)) %>% select(-`0`)
+
+
+
+```
+
+
+
+```{r}
+
+datatable(other_plants_sub, 
+          rownames = F, extensions = 'Buttons', filter="top", editable=T, 
+              options = list(dom = 'Blfrtip', 
+                             buttons = c('csv', 'excel'), 
+                             lengthMenu = list(c(10,50,100,-1),c(10,50,100,"All"))))
+
+
+```

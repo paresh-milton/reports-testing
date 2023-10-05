@@ -1,19 +1,5 @@
 [
   {
-    "objectID": "posts/dbr/index.html",
-    "href": "posts/dbr/index.html",
-    "title": "DBR list",
-    "section": "",
-    "text": "Sales Achieved vs Business Plan for the year\n\n\n\n\n\n\n\n\nCategory level Business Plan chase for the year\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nTarget vs Sales Achieved\n\n\n\n\n\n\n\nCategory level Business Plan for current Month"
-  },
-  {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Reports",
-    "section": "",
-    "text": "Date\n\n\nTitle\n\n\nAuthor\n\n\n\n\n\n\nJun 20, 2023\n\n\nDBR list\n\n\nParesh Kadoo\n\n\n\n\n\n\nNo matching items"
-  },
-  {
     "objectID": "about.html",
     "href": "about.html",
     "title": "About",
@@ -21,24 +7,10 @@
     "text": "About this blog"
   },
   {
-    "objectID": "posts/post-with-code/index.html",
-    "href": "posts/post-with-code/index.html",
-    "title": "Post With Code",
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Reports",
     "section": "",
-    "text": "This is a post with executable code.\n\n1 + 1\n\n[1] 2"
-  },
-  {
-    "objectID": "posts/welcome/index.html",
-    "href": "posts/welcome/index.html",
-    "title": "Welcome To My Blog",
-    "section": "",
-    "text": "This is the first post in a Quarto blog. Welcome!\n\nSince this post doesn’t specify an explicit image, the first image in the post will be used in the listing page of posts."
-  },
-  {
-    "objectID": "posts/dbr_list/index.html",
-    "href": "posts/dbr_list/index.html",
-    "title": "DBR list",
-    "section": "",
-    "text": "Sales Achieved vs Business Plan for the year\n\n\n\n\n\n\n\n\nCategory level Business Plan chase for the year\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nTarget vs Sales Achieved\n\n\n\n\n\n\n\nCategory level Business Plan for current Month"
+    "text": "Date\n\n\nTitle\n\n\nAuthor\n\n\n\n\n\n\nOct 5, 2023\n\n\nPending PO with inventory mapping\n\n\nParesh Kadoo\n\n\n\n\n\n\nNo matching items"
   }
 ]
