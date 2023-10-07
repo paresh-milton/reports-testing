@@ -140,10 +140,39 @@ for (i in seq_along(ZSD060_sub$`MATERIAL NUMBER`)){
 }
   
 
-other_plants_sub <- other_plants %>% select(-remain_units) %>% 
-  pivot_wider(names_from = assign_plant, values_from = assign_units, 
-              values_fill = 0, values_fn = ~sum(.x, na.rm = T)) %>% select(-`0`)
+other_plants$Billing_plant <- rep("0", nrow(other_plants))
 
+
+other_plants$Billing_plant[other_plants$assign_plant %in% 
+                             c(1001,1027, 9101, 9111, 9112, 9125, 9126, 9117)] <-"Vapi-9117"
+
+other_plants$Billing_plant[other_plants$assign_plant %in% 
+                             c(1002, 1003, 1011, 1026, 9102, 9118, 9116, 9128, 9132)] <-"Haridwar-9102"
+
+other_plants$Billing_plant[other_plants$assign_plant %in% 
+                             c(1004, 1008, 9113, 9114, 9127, 9128, 9129, 9130, 9131)] <-"Rampur- (9113 & 9114)"
+
+other_plants$Billing_plant[other_plants$assign_plant %in% 
+                             c(1012, 1022, 9109)] <-"Sri City-9109"
+
+other_plants$Billing_plant[other_plants$assign_plant == 7138] <-"Pune-7138"
+other_plants$Billing_plant[other_plants$assign_plant == 7135] <-"Ghaziabad-7135"
+other_plants$Billing_plant[other_plants$assign_plant == 9115] <-"Kolkatta-9115"
+other_plants$Billing_plant[other_plants$assign_plant == 9110] <-"Miraroad-9110"
+other_plants$Billing_plant[other_plants$assign_plant == 7113] <-"Cuttack-7113"
+other_plants$Billing_plant[other_plants$assign_plant == 7124] <-"Chennai-7124"
+other_plants$Billing_plant[other_plants$assign_plant == 7130] <-"Hyderabad-7130"
+other_plants$Billing_plant[other_plants$assign_plant == 7132] <-"Banglore-7132"
+
+
+
+other_plants_sub <- other_plants %>% select(-c(remain_units, assign_plant, NLC)) %>% 
+  pivot_wider(names_from = Billing_plant, values_from = assign_units, 
+              values_fill = 0, values_fn = ~sum(.x, na.rm = T)) %>% select(-`0`) %>% 
+  select(`REC DESCRIPTION`, `SUPPLYING PLANT`, `PO No`, `PURCH/SALES DATE`, `DIVISON DESCRIPTION`, `MATERIAL NUMBER`, 
+         `SHORT DESCRIPTION`, Pending_units, `Pending_value`, avlbl_units_at_supp_plant, remain_req_units, `Vapi-9117`, 
+         `Haridwar-9102`, `Sri City-9109`, `Miraroad-9110`, `Banglore-7132`, `Ghaziabad-7135`, `Kolkatta-9115`, 
+         `Hyderabad-7130`, `Chennai-7124`, `Pune-7138`, `Cuttack-7113`)
 
 
 ```
